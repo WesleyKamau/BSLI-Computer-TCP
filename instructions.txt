@@ -1,0 +1,9 @@
+Basic modbus connection with python (labjack-ljm and pymodbus):
+
+Utilize LJM to determine the IP address of the Labjack T7-PRO
+	Scripts --> More --> Ethernet --> read_ethernet_config.py
+
+Adjust IP address accordingly within ModbusTcpClient object initialization
+
+Client.read_input_registers to read the inputs of the LabJack
+
