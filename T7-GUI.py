@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import threading
 import time
+import socket
 
 # Dictionary of register addresses and their names
 registers = {
@@ -15,6 +16,11 @@ registers = {
     'AIN3': 6
     # Add other registers as necessary
 }
+
+
+# Create the data frame for holding register values
+data_frame = pd.DataFrame(columns=registers.keys())
+data_frame.set_index(list(registers.keys()))
 
 # Function to read the registers
 def read_registers(client: ModbusTcpClient):
@@ -33,8 +39,8 @@ def update_values(client, data_frame, graphs, x_data):
     while True:
         data = read_registers(client)
         df = pd.DataFrame([data])
-        data_frame = df.T 
-        print(data_frame.head())
+        data_frame = pd.concat([data_frame, df], ignore_index=True)
+        print(data_frame.tail())
 
         # Append new x value for the time axis
         x_data.append(x_data[-1] + 0.5 if x_data else 0)  # Increment time by 0.5s
@@ -50,9 +56,12 @@ def update_values(client, data_frame, graphs, x_data):
         plt.xlim([max(0, x_data[-1] - 10), x_data[-1] + 1])  # Keep a moving window of 10 seconds
         plt.ylim([0, 10000])  # Adjust y-limits as needed based on your register values
 
+        # Save the DataFrame to a CSV file every 5 seconds (or as needed)
+        data_frame.to_csv('data/data.csv', index=False)
+
         # Redraw the canvas for live update
         plt.draw()
-        time.sleep(0.5)
+        time.sleep(.5)
 
 
 # Function to start Modbus client and GUI updates
@@ -77,16 +86,12 @@ def create_gui():
     ip_label.grid(row=0, column=0, padx=5, pady=5)
     
     ip_entry = ttk.Entry(root)
-    ip_entry.insert(0, "172.27.91.148")
+    ip_entry.insert(0, socket.gethostbyname(socket.gethostname()))
     ip_entry.grid(row=0, column=1, padx=5, pady=5)
 
     # Button to start reading registers
     start_button = ttk.Button(root, text="Start", command=lambda: start_modbus(ip_entry.get(), canvas, data_frame, graphs))
     start_button.grid(row=0, column=2, padx=5, pady=5)
-
-    # Create the data frame for holding register values
-    data_frame = pd.DataFrame(columns=registers.keys())
-    data_frame.set_index(list(registers.keys()))
 
     # Create the matplotlib figure for live plotting
     fig, ax = plt.subplots(figsize=(6, 4))
@@ -103,8 +108,17 @@ def create_gui():
     # Integrate matplotlib with Tkinter
     canvas = FigureCanvasTkAgg(fig, master=root)
     canvas.get_tk_widget().grid(row=1, column=0, columnspan=3)
+
+    root.protocol("WM_DELETE_WINDOW", window_exit)
     
     root.mainloop()
+
+def window_exit():
+    print("bye")
+    # data_frame.to_csv('data\data.csv')
+    exit()
+
+
 
 # Helper function to convert data to float32
 def data_to_float32(data):
@@ -113,3 +127,6 @@ def data_to_float32(data):
 # Run the GUI
 if __name__ == "__main__":
     create_gui()
+
+def save_data():
+    data_frame.to_csv('data\data.csv')

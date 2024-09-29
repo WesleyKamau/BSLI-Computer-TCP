@@ -5,6 +5,7 @@ from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.server.async_io import StartTcpServer
 from pymodbus.datastore import ModbusSequentialDataBlock
 from threading import Thread
+import socket
 
 # Dictionary of register addresses and their names
 registers = {
@@ -54,5 +55,6 @@ def run_simulated_device(static_ip):
 
 if __name__ == "__main__":
     # Replace this with the static IP address of your machine
-    static_ip = "0.0.0.0"  # Replace with your machine's IP address
+    static_ip = socket.gethostbyname(socket.gethostname())  # Replace with your machine's IP address
+    print(f"Starting simulated device at IP: {static_ip}")
     run_simulated_device(static_ip)
